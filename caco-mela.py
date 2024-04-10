@@ -2,6 +2,7 @@
 import argparse
 import os
 import pwd
+from typing import Optional
 
 import ldap
 from dotenv import load_dotenv, find_dotenv
@@ -17,7 +18,7 @@ def set_boolean(config: dict, var: str):
 		config[var] = config[var].lower() not in ('0', 'no', 'false', 'n', 'off')
 
 
-def parse_args() -> dict[str, str | bool]:
+def parse_args(tests_env: Optional[str] = None) -> dict[str, str | bool]:
 	parser = argparse.ArgumentParser(description='Provision SSH keys from a LDAP server, without syncing UIDs.', prog="caco-mela")
 	parser.add_argument('--version', action='version', version='%(prog)s 1.0.0')
 	parser.add_argument('-l', '--ldap', dest='LDAP_BIND_SERVER', type=str, help="LDAP server address")
@@ -32,11 +33,16 @@ def parse_args() -> dict[str, str | bool]:
 	parser.add_argument('--user-owns-file', dest='SSH_USER_OWNS_FILE', action='store_true', help="Users are set to owners of their authorized_keys file, if the file is created")
 	parser.add_argument('-v', '--verbose', action='store_true', help="Verbose output")
 	parser.add_argument('IGNORED_ACCOUNTS', nargs='*', type=str, help="Accounts to ignore")
-	args = parser.parse_args()
-	load_dotenv(find_dotenv())
+	if tests_env is not None:
+		args = parser.parse_args([])
+		load_dotenv(tests_env, override=True)
+		print(os.environ)
+	else:
+		args = parser.parse_args()
+		load_dotenv()
 	config = dict()
 	for key, val in vars(args).items():
-		config[key] = os.environ.get(key) if val is None else val
+		config[key] = os.environ.get(key) if (val is None or val is False) else val
 	set_default(config, 'LDAP_SEARCH_SSH_KEY_ATTR', 'sshPublicKey')
 	set_default(config, 'LDAP_SEARCH_SSH_UID_ATTR', 'uid')
 	set_default(config, 'SSH_AUTHORIZED_KEYS_FILES', '')
@@ -81,9 +87,12 @@ def get_data_from_server(config):
 						add[result_data[0][1][config['LDAP_SEARCH_SSH_UID_ATTR']][0].decode('ascii')] = [
 							x.decode('ascii') for x in result_data[0][1][config['LDAP_SEARCH_SSH_KEY_ATTR']]]
 					else:
-						print(f"No attribute {config['LDAP_SEARCH_SSH_KEY_ATTR']}, ignoring")
+						add[result_data[0][1][config['LDAP_SEARCH_SSH_UID_ATTR']][0].decode('ascii')] = []
+						if config['verbose']:
+							print(f"No attribute {config['LDAP_SEARCH_SSH_KEY_ATTR']} for user {result_data[0][0]}, SSH keys will be removed")
 				else:
-					print(f"No attribute {config['LDAP_SEARCH_SSH_UID_ATTR']}, ignoring")
+					if config['verbose']:
+						print(f"No attribute {config['LDAP_SEARCH_SSH_UID_ATTR']} for user {result_data[0][0]}, ignoring")
 			else:
 				break
 	except ldap.LDAPError as e:
@@ -138,7 +147,10 @@ def ssh_authorized_keys_file(config, user: pwd.struct_passwd, create: bool = Tru
 			if config['verbose']:
 				print(f"Setting owner to {user.pw_uid}:{user.pw_gid} and mode to 600 for file {path}")
 			os.chown(path, user.pw_uid, user.pw_gid)
-			os.chmod(path, 0o600)
+		else:
+			if config['verbose']:
+				print(f"Setting mode to 600 for file {path}")
+		os.chmod(path, 0o600)
 
 	return path
 
@@ -159,8 +171,8 @@ def generate_text(keys: list[str]):
 	return write_this
 
 
-def main():
-	config = parse_args()
+def main(tests_env: Optional[str] = None):
+	config = parse_args(tests_env)
 	results = get_data_from_server(config)
 	uid_min, uid_max = read_login_defs(config)
 
@@ -182,11 +194,11 @@ def main():
 				if os.path.exists(ssh_file):
 					if config['verbose']:
 						print(f"User {user.pw_name} not found in LDAP server, removing keys")
-						text = generate_text([])
-						if update_file(ssh_file, text):
-							print(f"Updated user {user.pw_name} by removing all SSH keys")
-						elif config['verbose']:
-							print(f"No change for user {user.pw_name} with 0 SSH keys")
+					text = generate_text([])
+					if update_file(ssh_file, text):
+						print(f"Updated user {user.pw_name} by removing all SSH keys")
+					elif config['verbose']:
+						print(f"No change for user {user.pw_name} with 0 SSH keys")
 
 
 if __name__ == "__main__":
