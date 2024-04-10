@@ -134,12 +134,12 @@ def reset_database():
 
 
 def test_basic(user3_old_key):
-	with open('test.env', 'w') as file:
+	with open('tests/.env.test', 'w') as file:
 		file.write('LDAP_SEARCH_BASE="ou=people,dc=example,dc=test"\n')
 		file.write('LDAP_FILTER="(&(memberOf=cn=sysadmin,ou=groups,dc=example,dc=test)(!(nsAccountLock=true)))"\n')
 		file.write('LDAP_SEARCH_SSH_KEY_ATTR="nsSshPublicKey"\n')
 		file.write('SSH_USER_OWNS_FILE="1"\n')
-	caco_mela.main('test.env')
+	caco_mela.main('tests/.env.test')
 
 	assert os.path.isfile('/home/user1/.ssh/authorized_keys')
 	assert os.path.isfile('/home/user2/.ssh/authorized_keys')
@@ -179,13 +179,13 @@ def test_basic(user3_old_key):
 
 
 def test_ignored(user3_old_key):
-	with open('test.env', 'w') as file:
+	with open('tests/.env.test', 'w') as file:
 		file.write('LDAP_SEARCH_BASE="ou=people,dc=example,dc=test"\n')
 		file.write('LDAP_FILTER="(&(memberOf=cn=sysadmin,ou=groups,dc=example,dc=test)(!(nsAccountLock=true)))"\n')
 		file.write('LDAP_SEARCH_SSH_KEY_ATTR="nsSshPublicKey"\n')
 		file.write('SSH_USER_OWNS_FILE="1"\n')
 		file.write('IGNORED_ACCOUNTS=user1,user3,userTest\n')
-	caco_mela.main('test.env')
+	caco_mela.main('tests/.env.test')
 
 	assert not os.path.isfile('/home/user1/.ssh/authorized_keys')
 	assert os.path.isfile('/home/user2/.ssh/authorized_keys')
@@ -230,13 +230,13 @@ def test_ignored(user3_old_key):
 
 
 def test_deleted_user(userunknown_old_key):
-	with open('test.env', 'w') as file:
+	with open('tests/.env.test', 'w') as file:
 		file.write('LDAP_SEARCH_BASE="ou=people,dc=example,dc=test"\n')
 		file.write('LDAP_FILTER="(&(memberOf=cn=sysadmin,ou=groups,dc=example,dc=test)(!(nsAccountLock=true)))"\n')
 		file.write('LDAP_SEARCH_SSH_KEY_ATTR="nsSshPublicKey"\n')
 		file.write('SSH_USER_OWNS_FILE="1"\n')
 		file.write('IGNORED_ACCOUNTS=""\n')
-	caco_mela.main('test.env')
+	caco_mela.main('tests/.env.test')
 
 	assert os.path.isfile('/home/userUnknown/.ssh/authorized_keys')
 
@@ -255,13 +255,13 @@ def test_deleted_user(userunknown_old_key):
 
 
 def test_deleted_user_ignore(userunknown_old_key):
-	with open('test.env', 'w') as file:
+	with open('tests/.env.test', 'w') as file:
 		file.write('LDAP_SEARCH_BASE="ou=people,dc=example,dc=test"\n')
 		file.write('LDAP_FILTER="(&(memberOf=cn=sysadmin,ou=groups,dc=example,dc=test)(!(nsAccountLock=true)))"\n')
 		file.write('LDAP_SEARCH_SSH_KEY_ATTR="nsSshPublicKey"\n')
 		file.write('SSH_USER_OWNS_FILE="1"\n')
 		file.write('IGNORED_ACCOUNTS="userUnknown,user999"\n')
-	caco_mela.main('test.env')
+	caco_mela.main('tests/.env.test')
 
 	assert os.path.isfile('/home/userUnknown/.ssh/authorized_keys')
 

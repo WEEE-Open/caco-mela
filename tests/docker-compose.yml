@@ -12,7 +12,7 @@ services:
           DS_DM_PASSWORD: "asd"
   tests:
     image: python:3
-    # Add "; bash" at the end to get a shelle where you can re-run the tests
+    # Add "; bash" at the end to get a shell where you can re-run the tests
     command: bash -c "apt-get update && apt-get install -y libldap2-dev libsasl2-dev && cd /opt/caco-mela && python -m venv ../venv && source ../venv/bin/activate && pip install -r requirements.txt && pip install pytest && pytest tests/tests.py"
     depends_on:
       - dirsrv
