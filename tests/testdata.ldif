@@ -1,0 +1,106 @@
+version: 1
+
+#dn: dc=example,dc=test
+#objectClass: domain
+#objectClass: top
+#dc: example
+#description: dc=example,dc=test
+
+dn: ou=groups,dc=example,dc=test
+objectClass: organizationalunit
+objectClass: top
+ou: groups
+
+dn: ou=people,dc=example,dc=test
+objectClass: organizationalunit
+objectClass: top
+ou: people
+
+dn: cn=demo_group,ou=Groups,dc=example,dc=test
+objectClass: nsMemberOf
+objectClass: groupOfNames
+objectClass: top
+cn: demo_group
+
+dn: cn=sysadmin,ou=groups,dc=example,dc=test
+objectClass: top
+objectClass: nsMemberOf
+objectClass: groupOfNames
+cn: sysadmin
+member: uid=user1,ou=people,dc=example,dc=test
+member: uid=user2,ou=people,dc=example,dc=test
+member: uid=user5,ou=people,dc=example,dc=test
+member: uid=userTest,ou=people,dc=example,dc=test
+
+dn: uid=user1,ou=people,dc=example,dc=test
+objectClass: nsMemberOf
+objectClass: top
+objectClass: nsOrgPerson
+objectClass: nsAccount
+objectClass: nsPerson
+cn: User One
+displayName: User One
+memberOf: cn=sysadmin,ou=groups,dc=example,dc=test
+nsSshPublicKey: ssh-ed25519 AAAAAAAi9s0dvjvjewjio0wevjwejvwejvowiwvesd fooba
+ rbaz
+uid: user1
+
+dn: uid=user2,ou=people,dc=example,dc=test
+objectClass: nsMemberOf
+objectClass: top
+objectClass: nsOrgPerson
+objectClass: nsAccount
+objectClass: nsPerson
+cn: User Two
+displayName: User Two
+memberOf: cn=sysadmin,ou=groups,dc=example,dc=test
+nsSshPublicKey: ssh-ed25519 AAAAmviuewjuivjrvenuvlejnreiuvwejievwojviovewio
+ foobar
+nsSshPublicKey: ssh-ed25519 AAAACvSDMI62OVMImv2eMVMS5DIOV346EMVWIEO somethin
+ g
+uid: user2
+
+dn: uid=user3,ou=people,dc=example,dc=test
+objectClass: nsOrgPerson
+objectClass: nsAccount
+objectClass: nsPerson
+objectClass: top
+cn: User Three
+displayName: User Three
+uid: user3
+
+dn: uid=user4,ou=people,dc=example,dc=test
+objectClass: nsMemberOf
+objectClass: top
+objectClass: nsOrgPerson
+objectClass: nsAccount
+objectClass: nsPerson
+cn: User Four
+displayName: User Four
+nsSshPublicKey: ssh-ed25519 AAAAAAAxxijwvivjwriovjwiovjwioevjwio393k foobarb
+ az
+uid: user4
+
+dn: uid=user5,ou=people,dc=example,dc=test
+objectClass: nsMemberOf
+objectClass: top
+objectClass: nsOrgPerson
+objectClass: nsAccount
+objectClass: nsPerson
+cn: User Five
+displayName: User Five
+memberOf: cn=sysadmin,ou=groups,dc=example,dc=test
+nsSshPublicKey: ssh-ed25519 AAAAArei90vw3jb49r8hvb738uewjvuierverv foobarbaz
+uid: user5
+
+dn: uid=userTest,ou=people,dc=example,dc=test
+objectClass: nsMemberOf
+objectClass: top
+objectClass: nsOrgPerson
+objectClass: nsAccount
+objectClass: nsPerson
+cn: User Test
+displayName: User Test
+memberOf: cn=sysadmin,ou=groups,dc=example,dc=test
+uid: userTest
+

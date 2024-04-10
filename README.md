@@ -29,3 +29,14 @@ All UPPER_CASE names in `caco_mela.py --help` correspond to an environment varia
 ## Run
 
 Create a systemd unit and timer, a cron job or any other similar mechanism to run the program every X minutes.
+
+## Tests
+
+To avoid changing your local authorized_keys, run everything inside a container:
+
+```shell
+cd tests
+docker-compose up
+```
+
+If you add more tests, any variable you set in test.env must be set in all the tests, otherwise they will interfere with each other.

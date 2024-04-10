@@ -1,0 +1,24 @@
+version: "5"
+services:
+  dirsrv:
+    image: 389ds/dirsrv:3.0
+    ports:
+      - "3389:3389"
+    volumes:
+      - "/var/www/html:/var/www/html"
+      - "/home/some_user/web/apache2_faildumps.conf:/etc/apache2/conf-enabled/apache2_faildumps.conf"
+    environment:
+          DS_SUFFIX_NAME: "dc=example,dc=test"
+          DS_DM_PASSWORD: "asd"
+  tests:
+    image: python:3
+    # Add "; bash" at the end to get a shelle where you can re-run the tests
+    command: bash -c "apt-get update && apt-get install -y libldap2-dev libsasl2-dev && cd /opt/caco-mela && python -m venv ../venv && source ../venv/bin/activate && pip install -r requirements.txt && pip install pytest && pytest tests/tests.py"
+    depends_on:
+      - dirsrv
+    environment:
+      LDAP_BIND_SERVER: "ldap://dirsrv:3389"
+      LDAP_BIND_DN: "cn=Directory Manager"
+      LDAP_BIND_PASSWORD: "asd"
+    volumes:
+      - ..:/opt/caco-mela
