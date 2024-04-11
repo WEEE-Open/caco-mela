@@ -23,9 +23,9 @@ jobs:
         run: pip install black flake8
 
       - name: Run linters
-        uses: wearerequired/lint-action@v1
+        uses: wearerequired/lint-action@v2
         with:
           black: true
-          flake8: false
+          black_args: --line-length 1000
           auto_fix: true
           git_email: "95386651+weee-open-bot@users.noreply.github.com"
