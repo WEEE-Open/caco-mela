@@ -28,7 +28,7 @@ jobs:
 
     runs-on: ubuntu-latest
     container:
-      image: ${{ matrix.python }}
+      image: python:${{ matrix.python }}
       env:
         LDAP_BIND_SERVER: ${{env.LDAP_BIND_SERVER}}
         LDAP_BIND_DN: ${{env.LDAP_BIND_DN}}
