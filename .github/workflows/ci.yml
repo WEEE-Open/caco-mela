@@ -13,7 +13,7 @@ jobs:
   run-tests:
     strategy:
       matrix:
-        python: [ '3.9', '3.12', 'latest' ]
+        python: [ '3.9', '3.12', '>3.12' ]
 
     services:
       dirsrv:
