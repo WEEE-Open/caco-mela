@@ -2,7 +2,7 @@
 import argparse
 import os
 import pwd
-from typing import Optional
+from typing import Optional, Union
 
 import ldap
 from dotenv import load_dotenv, find_dotenv
@@ -18,7 +18,7 @@ def set_boolean(config: dict, var: str):
 		config[var] = config[var].lower() not in ('0', 'no', 'false', 'n', 'off')
 
 
-def parse_args(tests_env: Optional[str] = None) -> dict[str, str | bool]:
+def parse_args(tests_env: Optional[str] = None) -> dict[str, Union[str, bool]]:
 	parser = argparse.ArgumentParser(description='Provision SSH keys from a LDAP server, without syncing UIDs.', prog="caco-mela")
 	parser.add_argument('--version', action='version', version='%(prog)s 1.0.0')
 	parser.add_argument('-l', '--ldap', dest='LDAP_BIND_SERVER', type=str, help="LDAP server address")
