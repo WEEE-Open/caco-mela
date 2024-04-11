@@ -95,6 +95,22 @@ def userunknown_old_key():
 
 @pytest.fixture(autouse=True)
 def reset_database():
+	# the official container takes a while before 389DS actually accepts the password that was passed as an env var,
+	# so we try to connect for 30 s and then actually reset the database
+	done = False
+	tries = 0
+	while not done:
+		try:
+			with LdapConnection() as conn:
+				done = True
+		except ldap.INVALID_CREDENTIALS as e:
+			tries += 1
+			if tries > 30:
+				raise e
+			else:
+				print(f"LDAP invalid credentials, attempt {str(tries)} failed")
+				time.sleep(1)
+
 	with LdapConnection() as conn:
 		things = (
 			f'ou=groups,{SUFFIX}',
@@ -110,23 +126,12 @@ def reset_database():
 		# conn.modify_s('cn=config', [(ldap.MOD_REPLACE, 'nsslapd-dynamic-plugins', b'on')])
 		# conn.modify_s('cn=MemberOf Plugin,cn=plugins,cn=config', [(ldap.MOD_REPLACE, 'nsslapd-pluginEnabled', b'on')])
 
-		done = False
-		tries = 0
-		while not done:
-			try:
-				with open(str(os.path.join(os.path.dirname(__file__), 'create-backend.ldif')), 'rb') as f:
-					parser = LdifReaderAdd(f, conn)
-					parser.parse()
-				done = True
-			except ldap.INVALID_CREDENTIALS as e:
-				# the official container takes a while before 389DS actually accepts the password that was passed as an env var
-				tries += 1
-				if tries > 30:
-					raise e
-				else:
-					time.sleep(1)
-			except ldap.ALREADY_EXISTS:
-				done = True
+		try:
+			with open(str(os.path.join(os.path.dirname(__file__), 'create-backend.ldif')), 'rb') as f:
+				parser = LdifReaderAdd(f, conn)
+				parser.parse()
+		except ldap.ALREADY_EXISTS:
+			pass
 
 		with open(str(os.path.join(os.path.dirname(__file__), 'testdata.ldif')), 'rb') as f:
 			parser = LdifReaderAdd(f, conn)
