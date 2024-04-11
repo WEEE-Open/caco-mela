@@ -110,6 +110,13 @@ def reset_database():
 			else:
 				print(f"LDAP invalid credentials, attempt {str(tries)} failed")
 				time.sleep(1)
+		except ldap.SERVER_DOWN as e:
+			tries += 1
+			if tries > 30:
+				raise e
+			else:
+				print(f"LDAP server down, attempt {str(tries)} failed")
+				time.sleep(1)
 
 	with LdapConnection() as conn:
 		things = (
