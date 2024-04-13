@@ -74,6 +74,24 @@ def create_users():
         os.system(f"useradd -m {user}")
 
 
+@pytest.fixture(autouse=True)
+def unset_env_variables():
+    variables = (
+        'LDAP_SEARCH_BASE',
+        'LDAP_FILTER',
+        'SSH_AUTHORIZED_KEYS_FILES',
+        'LDAP_SEARCH_SSH_KEY_ATTR',
+        'SSH_USER_OWNS_FILE',
+        'IGNORED_ACCOUNTS',
+        'COMMON_ACCOUNTS',
+    )
+    for variable in variables:
+        try:
+            del os.environ[variable]
+        except KeyError:
+            pass
+
+
 @pytest.fixture()
 def user3_old_key():
     os.mkdir("/home/user3/.ssh")
@@ -146,13 +164,19 @@ def reset_database():
             parser.parse()
 
 
+def get_env_test_file():
+    dirname = os.path.dirname(__file__)
+    return os.path.join(dirname, '/.env.test')
+
+
 def test_basic(user3_old_key):
-    with open("tests/.env.test", "w") as file:
+    env_test_file = get_env_test_file()
+    with open(env_test_file, "w") as file:
         file.write('LDAP_SEARCH_BASE="ou=people,dc=example,dc=test"\n')
         file.write('LDAP_FILTER="(&(memberOf=cn=sysadmin,ou=groups,dc=example,dc=test)(!(nsAccountLock=true)))"\n')
         file.write('LDAP_SEARCH_SSH_KEY_ATTR="nsSshPublicKey"\n')
         file.write('SSH_USER_OWNS_FILE="1"\n')
-    caco_mela.main("tests/.env.test")
+    caco_mela.main(env_test_file)
 
     assert os.path.isfile("/home/user1/.ssh/authorized_keys")
     assert os.path.isfile("/home/user2/.ssh/authorized_keys")
@@ -192,13 +216,14 @@ def test_basic(user3_old_key):
 
 
 def test_ignored(user3_old_key):
-    with open("tests/.env.test", "w") as file:
+    env_test_file = get_env_test_file()
+    with open(env_test_file, "w") as file:
         file.write('LDAP_SEARCH_BASE="ou=people,dc=example,dc=test"\n')
         file.write('LDAP_FILTER="(&(memberOf=cn=sysadmin,ou=groups,dc=example,dc=test)(!(nsAccountLock=true)))"\n')
         file.write('LDAP_SEARCH_SSH_KEY_ATTR="nsSshPublicKey"\n')
         file.write('SSH_USER_OWNS_FILE="1"\n')
         file.write("IGNORED_ACCOUNTS=user1,user3,userTest\n")
-    caco_mela.main("tests/.env.test")
+    caco_mela.main(env_test_file)
 
     assert not os.path.isfile("/home/user1/.ssh/authorized_keys")
     assert os.path.isfile("/home/user2/.ssh/authorized_keys")
@@ -243,13 +268,13 @@ def test_ignored(user3_old_key):
 
 
 def test_deleted_user(userunknown_old_key):
-    with open("tests/.env.test", "w") as file:
+    env_test_file = get_env_test_file()
+    with open(env_test_file, "w") as file:
         file.write('LDAP_SEARCH_BASE="ou=people,dc=example,dc=test"\n')
         file.write('LDAP_FILTER="(&(memberOf=cn=sysadmin,ou=groups,dc=example,dc=test)(!(nsAccountLock=true)))"\n')
         file.write('LDAP_SEARCH_SSH_KEY_ATTR="nsSshPublicKey"\n')
         file.write('SSH_USER_OWNS_FILE="1"\n')
-        file.write('IGNORED_ACCOUNTS=""\n')
-    caco_mela.main("tests/.env.test")
+    caco_mela.main(env_test_file)
 
     assert os.path.isfile("/home/userUnknown/.ssh/authorized_keys")
 
@@ -268,13 +293,14 @@ def test_deleted_user(userunknown_old_key):
 
 
 def test_deleted_user_ignore(userunknown_old_key):
-    with open("tests/.env.test", "w") as file:
+    env_test_file = get_env_test_file()
+    with open(env_test_file, "w") as file:
         file.write('LDAP_SEARCH_BASE="ou=people,dc=example,dc=test"\n')
         file.write('LDAP_FILTER="(&(memberOf=cn=sysadmin,ou=groups,dc=example,dc=test)(!(nsAccountLock=true)))"\n')
         file.write('LDAP_SEARCH_SSH_KEY_ATTR="nsSshPublicKey"\n')
         file.write('SSH_USER_OWNS_FILE="1"\n')
         file.write('IGNORED_ACCOUNTS="userUnknown,user999"\n')
-    caco_mela.main("tests/.env.test")
+    caco_mela.main(env_test_file)
 
     assert os.path.isfile("/home/userUnknown/.ssh/authorized_keys")
 
@@ -290,3 +316,35 @@ def test_deleted_user_ignore(userunknown_old_key):
         as_list = filter_lines_in_file(f.readlines())
     assert "This file is managed by Caco mela" not in as_string
     assert ["ssh-ed25519 AAAAA123removemeremovemeREMOVEMEremoveme123 oldololdold\n"] == as_list
+
+
+def test_user_not_owns_file():
+    env_test_file = get_env_test_file()
+    with open(env_test_file, "w") as file:
+        file.write('LDAP_SEARCH_BASE="ou=people,dc=example,dc=test"\n')
+        file.write('LDAP_FILTER="(&(memberOf=cn=sysadmin,ou=groups,dc=example,dc=test)(!(nsAccountLock=true)))"\n')
+        file.write('LDAP_SEARCH_SSH_KEY_ATTR="nsSshPublicKey"\n')
+        file.write('IGNORED_ACCOUNTS="userUnknown"\n')
+    caco_mela.main(env_test_file)
+
+    for user in (
+        "user1",
+        "user2",
+        "user5",
+        "userTest",
+    ):
+        file = f"/home/{user}/.ssh/authorized_keys"
+        assert os.path.isfile(file)
+        assert 0o600 == stat.S_IMODE(os.stat(file).st_mode)
+        assert getpwnam(user).pw_uid != os.stat(file).st_uid
+        assert getpwnam(user).pw_gid != os.stat(file).st_gid
+        with open(file, "r") as f:
+            as_string = f.read()
+        assert "This file is managed by Caco mela" in as_string
+
+    for user in (
+        "user3",
+        "user4",
+        "userUnknown",
+    ):
+        assert not os.path.exists(f"/home/{user}/.ssh/authorized_keys")

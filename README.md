@@ -39,4 +39,4 @@ cd tests
 docker-compose up
 ```
 
-If you add more tests, any variable you set in `.env.test` must be set in all the tests, otherwise they will interfere with each other.
+If you add more tests, any variable you set in test.env must be set in all the tests, otherwise they will interfere with each other.
