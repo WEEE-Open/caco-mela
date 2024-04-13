@@ -1,6 +1,8 @@
 # Caco mela
 _Creatore Automatico di Chiavi Operante Mediante Estrazione da LDAP Artigianale_
 
+![a persimmon with SSH written on it](caco-mela.png "Caco mela")
+
 Read SSH public keys from a LDAP server, add them to authorized_keys file for the corresponding user, without looking at uid and gid numbers.
 
 Only user accounts (UID between UID_MIN and UID_MAX, read from /etc/login.defs) will be considered for update.  
