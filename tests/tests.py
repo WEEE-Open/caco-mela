@@ -77,13 +77,13 @@ def create_users():
 @pytest.fixture(autouse=True)
 def unset_env_variables():
     variables = (
-        'LDAP_SEARCH_BASE',
-        'LDAP_FILTER',
-        'SSH_AUTHORIZED_KEYS_FILES',
-        'LDAP_SEARCH_SSH_KEY_ATTR',
-        'SSH_USER_OWNS_FILE',
-        'IGNORED_ACCOUNTS',
-        'COMMON_ACCOUNTS',
+        "LDAP_SEARCH_BASE",
+        "LDAP_FILTER",
+        "SSH_AUTHORIZED_KEYS_FILES",
+        "LDAP_SEARCH_SSH_KEY_ATTR",
+        "SSH_USER_OWNS_FILE",
+        "IGNORED_ACCOUNTS",
+        "COMMON_ACCOUNTS",
     )
     for variable in variables:
         try:
@@ -166,7 +166,7 @@ def reset_database():
 
 def get_env_test_file():
     dirname = os.path.dirname(__file__)
-    return os.path.join(dirname, '/.env.test')
+    return os.path.join(dirname, "/.env.test")
 
 
 def test_basic(user3_old_key):

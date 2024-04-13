@@ -56,8 +56,8 @@ def parse_args(tests_env: Optional[str] = None) -> dict[str, Union[str, bool]]:
     set_default(config, "SSH_AUTHORIZED_KEYS_FILES", "")
     set_boolean(config, "LDAP_STARTTLS")
     set_boolean(config, "SSH_USER_OWNS_FILE")
-    set_comma(config, 'IGNORED_ACCOUNTS')
-    set_comma(config, 'SHARED_ACCOUNTS')
+    set_comma(config, "IGNORED_ACCOUNTS")
+    set_comma(config, "SHARED_ACCOUNTS")
 
     return config
 
@@ -214,14 +214,14 @@ def main(tests_env: Optional[str] = None):
                     print(f"User {user.pw_name} is a shared account")
                 text = generate_text_shared(results)
                 ssh_file = ssh_authorized_keys_file(config, user)
-                if update_file(ssh_file, text, config['dry_run']):
+                if update_file(ssh_file, text, config["dry_run"]):
                     print(f"Updated user {user.pw_name} with all available SSH keys")
                 elif config["verbose"]:
                     print(f"No change for user {user.pw_name} with all SSH keys")
             elif user.pw_name in results:
                 text = generate_text(results[user.pw_name])
                 ssh_file = ssh_authorized_keys_file(config, user)
-                if update_file(ssh_file, text, config['dry_run']):
+                if update_file(ssh_file, text, config["dry_run"]):
                     print(f"Updated user {user.pw_name} with {str(len(results[user.pw_name]))} SSH keys")
                 elif config["verbose"]:
                     print(f"No change for user {user.pw_name} with {str(len(results[user.pw_name]))} SSH keys")
@@ -231,7 +231,7 @@ def main(tests_env: Optional[str] = None):
                     if config["verbose"]:
                         print(f"User {user.pw_name} not found in LDAP server, removing keys")
                     text = generate_text([])
-                    if update_file(ssh_file, text, config['dry_run']):
+                    if update_file(ssh_file, text, config["dry_run"]):
                         print(f"Updated user {user.pw_name} by removing all SSH keys")
                     elif config["verbose"]:
                         print(f"No change for user {user.pw_name} with 0 SSH keys")
