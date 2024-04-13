@@ -18,6 +18,13 @@ def set_boolean(config: dict, var: str):
         config[var] = config[var].lower() not in ("0", "no", "false", "n", "off")
 
 
+def set_comma(config: dict, var: str):
+    if isinstance(config[var], list):
+        config[var] = set(config[var])
+    else:
+        config[var] = set(os.environ.get(var, default="").split(","))
+
+
 def parse_args(tests_env: Optional[str] = None) -> dict[str, Union[str, bool]]:
     parser = argparse.ArgumentParser(description="Provision SSH keys from a LDAP server, without syncing UIDs.", prog="caco-mela")
     parser.add_argument("--version", action="version", version="%(prog)s 1.0.0")
@@ -31,12 +38,13 @@ def parse_args(tests_env: Optional[str] = None) -> dict[str, Union[str, bool]]:
     parser.add_argument("--uid", dest="LDAP_SEARCH_SSH_UID_ATTR", type=str, help="Attribute containing the username")
     parser.add_argument("-a", "--authorized", dest="SSH_AUTHORIZED_KEYS_FILES", type=str, help="Value of sshd option AuthorizedKeysFile")
     parser.add_argument("--user-owns-file", dest="SSH_USER_OWNS_FILE", action="store_true", help="Users are set to owners of their authorized_keys file, if the file is created")
+    parser.add_argument("-i", "--ignored", dest="IGNORED_ACCOUNTS", nargs="+", type=str, help="Accounts to ignore")
+    parser.add_argument("--shared", dest="SHARED_ACCOUNTS", nargs="+", type=str, help="Shared accounts: add everyone's keys to them")
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
-    parser.add_argument("IGNORED_ACCOUNTS", nargs="*", type=str, help="Accounts to ignore")
+    parser.add_argument("--dry-run", action="store_true", help="Do not write to authorized_keys file, just print what would have been written")
     if tests_env is not None:
         args = parser.parse_args([])
         load_dotenv(tests_env, override=True)
-        print(os.environ)
     else:
         args = parser.parse_args()
         load_dotenv()
@@ -48,10 +56,8 @@ def parse_args(tests_env: Optional[str] = None) -> dict[str, Union[str, bool]]:
     set_default(config, "SSH_AUTHORIZED_KEYS_FILES", "")
     set_boolean(config, "LDAP_STARTTLS")
     set_boolean(config, "SSH_USER_OWNS_FILE")
-    if len(config["IGNORED_ACCOUNTS"]) == 0:
-        config["IGNORED_ACCOUNTS"] = set(os.environ.get("IGNORED_ACCOUNTS", default="").split(","))
-    else:
-        config["IGNORED_ACCOUNTS"] = set(config["IGNORED_ACCOUNTS"])
+    set_comma(config, 'IGNORED_ACCOUNTS')
+    set_comma(config, 'SHARED_ACCOUNTS')
 
     return config
 
@@ -154,19 +160,41 @@ def ssh_authorized_keys_file(config, user: pwd.struct_passwd, create: bool = Tru
     return path
 
 
-def update_file(ssh_file, text) -> bool:
+def update_file(ssh_file, text: str, dry_run: bool) -> bool:
     with open(ssh_file, "r") as file:
         current = file.read()
     if text != current:
-        with open(ssh_file, "w") as file:
-            file.write(text)
+        if dry_run:
+            print(f"Dry run, would have written this to {ssh_file}:")
+            print(text)
             return True
+        else:
+            with open(ssh_file, "w") as file:
+                file.write(text)
+                return True
     return False
 
 
-def generate_text(keys: list[str]):
+def _keys_to_text(keys):
     keys_text = "\n".join(keys) if len(keys) else "# No SSH keys for this user"
-    write_this = f"#\n# This file is managed by Caco mela ({__file__})\n# All manual changes will be overwritten.\n#\n{keys_text}\n"
+    return keys_text
+
+
+def _warning_text():
+    return f"#\n# This file is managed by Caco mela ({__file__})\n# All manual changes will be overwritten.\n#"
+
+
+def generate_text(keys: list[str]):
+    write_this = f"{_warning_text()}\n{_keys_to_text(keys)}\n"
+    return write_this
+
+
+def generate_text_shared(results: dict[str, list[str]]):
+    write_almost_this = [_warning_text()]
+    for user in results:
+        write_almost_this.append(f"# Keys for {user}:")
+        write_almost_this.append(_keys_to_text(results[user]))
+    write_this = "\n".join(write_almost_this)
     return write_this
 
 
@@ -181,10 +209,19 @@ def main(tests_env: Optional[str] = None):
                 if config["verbose"]:
                     print(f"Ignoring user {user.pw_name} due to IGNORED_ACCOUNTS")
                 continue
-            if user.pw_name in results:
+            if user.pw_name in config["SHARED_ACCOUNTS"]:
+                if config["verbose"]:
+                    print(f"User {user.pw_name} is a shared account")
+                text = generate_text_shared(results)
+                ssh_file = ssh_authorized_keys_file(config, user)
+                if update_file(ssh_file, text, config['dry_run']):
+                    print(f"Updated user {user.pw_name} with all available SSH keys")
+                elif config["verbose"]:
+                    print(f"No change for user {user.pw_name} with all SSH keys")
+            elif user.pw_name in results:
                 text = generate_text(results[user.pw_name])
                 ssh_file = ssh_authorized_keys_file(config, user)
-                if update_file(ssh_file, text):
+                if update_file(ssh_file, text, config['dry_run']):
                     print(f"Updated user {user.pw_name} with {str(len(results[user.pw_name]))} SSH keys")
                 elif config["verbose"]:
                     print(f"No change for user {user.pw_name} with {str(len(results[user.pw_name]))} SSH keys")
@@ -194,7 +231,7 @@ def main(tests_env: Optional[str] = None):
                     if config["verbose"]:
                         print(f"User {user.pw_name} not found in LDAP server, removing keys")
                     text = generate_text([])
-                    if update_file(ssh_file, text):
+                    if update_file(ssh_file, text, config['dry_run']):
                         print(f"Updated user {user.pw_name} by removing all SSH keys")
                     elif config["verbose"]:
                         print(f"No change for user {user.pw_name} with 0 SSH keys")

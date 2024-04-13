@@ -348,3 +348,52 @@ def test_user_not_owns_file():
         "userUnknown",
     ):
         assert not os.path.exists(f"/home/{user}/.ssh/authorized_keys")
+
+
+def test_sharing_is_caring():
+    env_test_file = get_env_test_file()
+    with open(env_test_file, "w") as file:
+        file.write('LDAP_SEARCH_BASE="ou=people,dc=example,dc=test"\n')
+        file.write('LDAP_FILTER="(&(memberOf=cn=sysadmin,ou=groups,dc=example,dc=test)(!(nsAccountLock=true)))"\n')
+        file.write('LDAP_SEARCH_SSH_KEY_ATTR="nsSshPublicKey"\n')
+        file.write('SSH_USER_OWNS_FILE="1"\n')
+        file.write('SHARED_ACCOUNTS="user1,user2,user3"\n')
+    caco_mela.main(env_test_file)
+
+    assert os.path.isfile("/home/user1/.ssh/authorized_keys")
+    assert os.path.isfile("/home/user2/.ssh/authorized_keys")
+    assert os.path.isfile("/home/user3/.ssh/authorized_keys")
+    assert os.path.isfile("/home/user5/.ssh/authorized_keys")
+    assert not os.path.isfile("/home/user4/.ssh/authorized_keys")
+    assert os.path.isfile("/home/userTest/.ssh/authorized_keys")
+    assert not os.path.isfile("/home/userUnknown/.ssh/authorized_keys")
+
+    for user in ("user1", "user2", "user3"):
+        file = f"/home/{user}/.ssh/authorized_keys"
+        assert 0o600 == stat.S_IMODE(os.stat(file).st_mode)
+        assert getpwnam(user).pw_uid == os.stat(file).st_uid
+        assert getpwnam(user).pw_gid == os.stat(file).st_gid
+
+        with open(file, "r") as f:
+            as_string = f.read()
+        with open(file, "r") as f:
+            as_list = filter_lines_in_file(f.readlines())
+        assert "This file is managed by Caco mela" in as_string
+        as_list_2 = []
+        for line in as_list:
+            if not line.startswith("#") and len(line.lstrip()) > 0:
+                as_list_2.append(line)
+        assert ["ssh-ed25519 AAAAAAAi9s0dvjvjewjio0wevjwejvwejvowiwvesd foobarbaz\n", "ssh-ed25519 AAAAmviuewjuivjrvenuvlejnreiuvwejievwojviovewiofoobar\n", "ssh-ed25519 AAAACvSDMI62OVMImv2eMVMS5DIOV346EMVWIEO something\n", "ssh-ed25519 AAAAArei90vw3jb49r8hvb738uewjvuierverv foobarbaz\n"] == as_list_2
+
+    for user in ("user5",):
+        file = f"/home/{user}/.ssh/authorized_keys"
+        with open(file, "r") as f:
+            as_string = f.read()
+        with open(file, "r") as f:
+            as_list = filter_lines_in_file(f.readlines())
+        assert "This file is managed by Caco mela" in as_string
+        as_list_2 = []
+        for line in as_list:
+            if not line.startswith("#") and len(line.lstrip()) > 0:
+                as_list_2.append(line)
+        assert ["ssh-ed25519 AAAAArei90vw3jb49r8hvb738uewjvuierverv foobarbaz\n"] == as_list_2

@@ -23,8 +23,10 @@ Three ways to pass options are possible:
 2. Environment variables
 3. A `.env` file, see `.env.example`
 
-If a variable is set multiple times, the one higher in this list will take precedence.  
-All UPPER_CASE names in `caco_mela.py --help` correspond to an environment variable with the same name.
+If a variable is set multiple times, the one higher in this list will take precedence.
+
+All UPPER_CASE names in `caco_mela.py --help` correspond to an environment variable with the same name.  
+If a variable takes a list, the values are space separated when using command line arguments and comma separated when using environment variables.
 
 ## Run
 
