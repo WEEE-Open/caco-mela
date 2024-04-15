@@ -34,6 +34,8 @@ If a variable takes a list, the values are space separated when using command li
 
 Create a systemd unit and timer, a cron job or any other similar mechanism to run the program every X minutes.
 
+You can find an example `caco-mela.unit` and `caco-mela.timer`.
+
 ## Tests
 
 To avoid changing your local authorized_keys, run everything inside a container:
@@ -42,5 +44,3 @@ To avoid changing your local authorized_keys, run everything inside a container:
 cd tests
 docker-compose up
 ```
-
-If you add more tests, any variable you set in test.env must be set in all the tests, otherwise they will interfere with each other.

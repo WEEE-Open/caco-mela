@@ -1,0 +1,10 @@
+[Unit]
+Description=Sync SSH keys every 15-16 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

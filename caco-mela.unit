@@ -1,0 +1,21 @@
+[Unit]
+Description=Sync SSH keys
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/path/to/caco-mela/venv/python /path/to/caco-mela/caco-mela.py
+StandardOutput=journal
+StandardError=journal
+Environment="LDAP_BIND_SERVER=ldap://localhost:3389"
+Environment="LDAP_BIND_DN=cn=Directory Manager"
+Environment="LDAP_BIND_PASSWORD=asd"
+Environment="LDAP_SEARCH_BASE=ou=people,dc=example,dc=test"
+Environment="LDAP_FILTER=(memberOf=cn=sysadmin,ou=groups,dc=example,dc=test)"
+Environment="SSH_AUTHORIZED_KEYS_FILES=/etc/ssh/authorized-keys/%u"
+Environment="SSH_USER_OWNS_FILE=1"
+Environment="IGNORED_ACCOUNTS=foo,bar,baz"
+Environment="SHARED_ACCOUNTS=quux"
+
+[Install]
+WantedBy=multi-user.target
