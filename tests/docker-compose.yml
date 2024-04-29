@@ -1,15 +1,13 @@
-version: "5"
+version: "6"
 services:
   dirsrv:
     image: 389ds/dirsrv:3.0
     ports:
       - "3389:3389"
-    volumes:
-      - "/var/www/html:/var/www/html"
-      - "/home/some_user/web/apache2_faildumps.conf:/etc/apache2/conf-enabled/apache2_faildumps.conf"
     environment:
-          DS_SUFFIX_NAME: "dc=example,dc=test"
-          DS_DM_PASSWORD: "asd"
+      DS_SUFFIX_NAME: "dc=example,dc=test"
+      DS_DM_PASSWORD: "asd"
+
   tests:
     image: python:3
     # Add "; bash" at the end to get a shell where you can re-run the tests
